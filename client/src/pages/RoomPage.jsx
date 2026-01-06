@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import socket from '../socket';
 import { QRCodeCanvas } from 'qrcode.react';
+import ConfirmModal from '../components/ConfirmModal';
 
 function RoomPage({ roomId, roomCode, username, isOwner, encryption, onUpdateRoomKey, onLeave }) {
   const [messages, setMessages] = useState([]);
@@ -9,6 +10,7 @@ function RoomPage({ roomId, roomCode, username, isOwner, encryption, onUpdateRoo
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [showMembers, setShowMembers] = useState(false);
   const [showRoomInfo, setShowRoomInfo] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [fingerprint, setFingerprint] = useState('');
   const [serverUrl, setServerUrl] = useState('');
   const messagesEndRef = useRef(null);
@@ -142,13 +144,26 @@ function RoomPage({ roomId, roomCode, username, isOwner, encryption, onUpdateRoo
     navigator.clipboard.writeText(roomCode);
   };
 
+  const handleLeaveClick = () => {
+    setShowLeaveConfirm(true);
+  };
+
+  const handleConfirmLeave = () => {
+    setShowLeaveConfirm(false);
+    onLeave();
+  };
+
+  const handleCancelLeave = () => {
+    setShowLeaveConfirm(false);
+  };
+
   return (
     <div className="page room-page">
       <div className="room-container">
         {/* Header */}
         <div className="room-header">
           <div className="room-info-left">
-            <button className="btn-back" onClick={onLeave}>
+            <button className="btn-back" onClick={handleLeaveClick}>
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -186,7 +201,7 @@ function RoomPage({ roomId, roomCode, username, isOwner, encryption, onUpdateRoo
             </button>
             <button
               className="btn btn-icon btn-leave"
-              onClick={onLeave}
+              onClick={handleLeaveClick}
               title={isOwner ? "Close Room (deletes all data)" : "Leave Room"}
               style={{
                 background: 'rgba(255, 75, 75, 0.2)',
@@ -342,6 +357,26 @@ function RoomPage({ roomId, roomCode, username, isOwner, encryption, onUpdateRoo
           </button>
         </form>
       </div>
+
+      {/* Leave Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showLeaveConfirm}
+        title={isOwner ? "⚠️ Close Room?" : "Leave Room?"}
+        message={isOwner
+          ? "You are the room owner. Leaving will permanently delete:"
+          : "Are you sure you want to leave this room?"
+        }
+        details={isOwner ? [
+          "All chat messages",
+          "All room members",
+          "The entire room"
+        ] : null}
+        onConfirm={handleConfirmLeave}
+        onCancel={handleCancelLeave}
+        confirmText={isOwner ? "Close Room" : "Leave"}
+        cancelText="Cancel"
+        isDanger={isOwner}
+      />
     </div>
   );
 }
